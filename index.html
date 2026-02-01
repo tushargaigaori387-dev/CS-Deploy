@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Segmentation System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .team-tag {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+        }
+        
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .clusters-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .cluster-card {
+            background: linear-gradient(135deg, var(--color) 0%, var(--color-dark) 100%);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cluster-card::before {
+            content: attr(data-cluster);
+            position: absolute;
+            right: -5px;
+            top: -10px;
+            font-size: 4rem;
+            font-weight: 900;
+            opacity: 0.2;
+        }
+        
+        .cluster-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        
+        .cluster-card p {
+            font-size: 0.85rem;
+            opacity: 0.95;
+            line-height: 1.4;
+        }
+        
+        .result-box {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            background: var(--result-color);
+            color: white;
+            display: none;
+            animation: slideIn 0.5s;
+        }
+        
+        .result-box.show {
+            display: block;
+        }
+        
+        .result-box h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .result-box .strategy {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            font-size: 0.95rem;
+        }
+        
+        .error-box {
+            background: #f44336;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .error-box.show {
+            display: block;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+            .clusters-grid {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Customer Segmentation System</h1>
+        <div class="team-tag">
+            Team: {% for member in team %}{{ member }}{% if not loop.last %} • {% endif %}{% endfor %}
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Input Form -->
+        <div class="card">
+            <h2>📝 Customer Information</h2>
+            <form id="predictionForm">
+                <div class="form-group">
+                    <label>Annual Income ($)</label>
+                    <input type="number" name="income" required min="0" step="1000" placeholder="50000">
+                </div>
+                
+                <div class="form-group">
+                    <label>Age</label>
+                    <input type="number" name="age" required min="18" max="100" placeholder="35">
+                </div>
+                
+                <div class="form-group">
+                    <label>Days Since Last Purchase</label>
+                    <input type="number" name="recency" required min="0" placeholder="15">
+                </div>
+                
+                <div class="form-group">
+                    <label>Total Spend (Last 2 Years $)</label>
+                    <input type="number" name="spend" required min="0" step="10" placeholder="500">
+                </div>
+                
+                <div class="form-group">
+                    <label>Total Kids</label>
+                    <input type="number" name="kids" required min="0" max="10" placeholder="0">
+                </div>
+                
+                <div class="form-group">
+                    <label>Web Visits per Month</label>
+                    <input type="number" name="web_visits" required min="0" placeholder="5">
+                </div>
+                
+                <div class="form-group">
+                    <label>Education Level</label>
+                    <select name="education" required>
+                        <option value="">Select Education</option>
+                        <option value="Basic">Basic</option>
+                        <option value="Graduation">Graduation</option>
+                        <option value="Master">Master</option>
+                        <option value="PhD">PhD</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Marital Status</label>
+                    <select name="marital" required>
+                        <option value="">Select Status</option>
+                        <option value="Single">Single</option>
+                        <option value="Married">Married</option>
+                        <option value="Together">Together</option>
+                        <option value="Divorced">Divorced</option>
+                        <option value="Widow">Widow</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn" id="submitBtn">
+                    <span id="btnText">Predict Customer Segment</span>
+                </button>
+            </form>
+            
+            <div class="error-box" id="errorBox"></div>
+            <div class="result-box" id="resultBox"></div>
+        </div>
+
+        <!-- Cluster Information -->
+        <div class="card">
+            <h2>📊 Customer Segments</h2>
+            <div class="clusters-grid">
+                {% for id, info in clusters.items() %}
+                <div class="cluster-card" 
+                     data-cluster="{{ id }}"
+                     style="--color: {{ info.color }}; --color-dark: {{ info.color }}dd;">
+                    <h3>Cluster {{ id }}: {{ info.name }}</h3>
+                    <p>{{ info.description }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div style="margin-top: 25px; padding: 15px; background: #f5f5f5; border-radius: 8px; border-left: 4px solid #667eea;">
+                <strong style="color: #333;">💡 About the Model</strong>
+                <p style="color: #666; margin-top: 8px; font-size: 0.9rem; line-height: 1.5;">
+                    Our AI model uses K-Means clustering with PCA to identify 4 distinct customer segments 
+                    based on purchasing behavior, demographics, and engagement patterns.
+                </p>
+                {% if not model_loaded %}
+                <p style="color: #f44336; margin-top: 10px; font-weight: 600;">
+                    ⚠ Model not loaded. Please check model files.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('predictionForm');
+        const resultBox = document.getElementById('resultBox');
+        const errorBox = document.getElementById('errorBox');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Show loading
+            submitBtn.disabled = true;
+            btnText.textContent = 'Analyzing...';
+            errorBox.classList.remove('show');
+            resultBox.classList.remove('show');
+            
+            try {
+                const formData = new FormData(form);
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultBox.style.setProperty('--result-color', data.color);
+                    resultBox.innerHTML = `
+                        <h3>🎯 Cluster ${data.cluster}: ${data.name}</h3>
+                        <p style="margin-top: 10px;">${data.description}</p>
+                        <div class="strategy">
+                            <strong>📈 Marketing Strategy:</strong><br>
+                            ${data.strategy}
+                        </div>
+                    `;
+                    resultBox.classList.add('show');
+                } else {
+                    errorBox.textContent = '❌ ' + data.error;
+                    errorBox.classList.add('show');
+                }
+            } catch (error) {
+                errorBox.textContent = '❌ Network error. Please try again.';
+                errorBox.classList.add('show');
+            } finally {
+                submitBtn.disabled = false;
+                btnText.textContent = 'Predict Customer Segment';
+            }
+        });
+    </script>
+</body>
+</html>
